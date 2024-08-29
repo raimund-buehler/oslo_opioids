@@ -2,9 +2,15 @@ library(tidyverse)
 library(readxl)
 library(writexl)
 
+# 8AOIs
 DrugA <- read_xlsx("data/DrugA.xlsx", sheet = "8AOIs")
 DrugB <- read_xlsx("data/DrugB.xlsx", sheet = "AOIs")
 DrugC <- read_xlsx("data/DrugC.xlsx", sheet = "Sheet3")
+
+# All AOIs
+DrugA <- read_xlsx("data/DrugA.xlsx", sheet = "raw")
+DrugB <- read_xlsx("data/DrugB.xlsx", sheet = "raw")
+DrugC <- read_xlsx("data/DrugC.xlsx", sheet = "raw")
 
 DrugA$drug <- "A"
 DrugB$drug <- "B"
@@ -23,6 +29,8 @@ unique_to_C <- setdiff(cols_C, union(cols_A, cols_B))
 DrugA <- DrugA %>% rename(perc_AOI = one_of(unique_to_A))
 DrugB <- DrugB %>% rename(perc_AOI = one_of(unique_to_B))
 DrugC <- DrugC %>% rename(perc_AOI = one_of(unique_to_C))
+
+DrugB <- DrugB %>% select(-any_of(unique_to_B))
 
 # harmonize coltypes
 # Function to coerce columns with the same name to the most common type
@@ -63,4 +71,8 @@ all_data <- bind_rows(dfs)
 
 all_data <- all_data %>% arrange(drug, Subject, Trial)
 
+# Save 8AOIs
 write_xlsx(all_data, "data/AllDrugs_8AOIs.xlsx")
+
+# Save All AOIs
+write_xlsx(all_data, "data/AllDrugs_AllAOIs.xlsx")

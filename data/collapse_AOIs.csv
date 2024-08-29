@@ -1,0 +1,21 @@
+StimOrder,ID,Stimulus,AOI,FixCount,FixTime,FixTimePerc,Drug,AttrLevel,Gaze2,FaceGender,Imagelist,Session
+1,101,f067r.jpg,forehead,0,0,0,morphine,1,A,F,1,1
+1,101,f067r.jpg,Cheeks,0,0,0,morphine,1,A,F,1,1
+1,101,f067r.jpg,Cheeks,0,0,0,morphine,1,A,F,1,1
+1,101,f067r.jpg,Eyes,2,1127.9,22.1,morphine,1,A,F,1,1
+1,101,f067r.jpg,Eyes,5,1163.8,22.8,morphine,1,A,F,1,1
+1,101,f067r.jpg,brow,0,0,0,morphine,1,A,F,1,1
+1,101,f067r.jpg,jaw,0,0,0,morphine,1,A,F,1,1
+1,101,f067r.jpg,mouth,0,0,0,morphine,1,A,F,1,1
+1,101,f067r.jpg,nose,1,1835.8,35.9,morphine,1,A,F,1,1
+1,101,f067r.jpg,hair,0,0,0,morphine,1,A,F,1,1
+1,101,f067r.jpg,White Space,2,627.8,12.3,morphine,1,A,F,1,1
+2,101,m015l.jpg,Cheeks,0,0,0,morphine,3,A,M,1,1
+2,101,m015l.jpg,Cheeks,0,0,0,morphine,3,A,M,1,1
+2,101,m015l.jpg,Eyes,3,708,13.9,morphine,3,A,M,1,1
+2,101,m015l.jpg,Eyes,1,432,8.5,morphine,3,A,M,1,1
+2,101,m015l.jpg,forehead,1,164,3.2,morphine,3,A,M,1,1
+2,101,m015l.jpg,brow,2,567.9,11.2,morphine,3,A,M,1,1
+2,101,m015l.jpg,jaw,2,640,12.6,morphine,3,A,M,1,1
+2,101,m015l.jpg,mouth,1,195.9,3.8,morphine,3,A,M,1,1
+2,101,m015l.jpg,nose,1,204,4,morphine,3,A,M,1,1
