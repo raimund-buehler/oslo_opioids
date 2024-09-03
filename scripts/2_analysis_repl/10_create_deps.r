@@ -6,7 +6,7 @@ library(writexl)
 path <- here("data", "8_merged_session.csv")
 # path <- here("data", "AllDrugs_AllAOIs.xlsx")
 
-df <- read_xlsx(path) %>%
+df <- read_csv(path) %>%
     rename(
         AOI = "Area of Interest",
         FixCount = "Fixation Count",
@@ -97,7 +97,7 @@ df_AOIgroups <- df_collapsed %>%
 # Create Fix# (only fixations to face)
 df_fix_n <- df_AOIgroups %>%
     mutate(AOI = case_when(
-        !AOI %in% c("whitespace_hair") ~ "face",
+        AOI %in% c("eye_brow", "nose_mouth_jaw", "forehead_cheek") ~ "face",
         TRUE ~ AOI
     )) %>%
     group_by(ID, Stimulus, StimOrder, AOI, Drug, AttrLevel, Gaze2, FaceGender, Imagelist, Session) %>%
@@ -107,13 +107,13 @@ df_fix_n <- df_AOIgroups %>%
         FixTimePerc = sum(FixTimePerc, na.rm = TRUE),
         .groups = "drop"
     ) %>%
-    arrange(ID, Session, StimOrder) %>%
-    filter(AOI == "face")
+    arrange(ID, Session, StimOrder)
+
+df_fix_n %>% filter(AOI == "face", FaceGender == "F" & ID %in% c(101:130))
+# 1780 rows, roughly the df in the published analysis (1729)
 
 # save to csv
-write_csv(df_fix_n, here("data", "df_fix_n.csv"))
-
-df_fix_n %>% filter(FaceGender == "F" & ID %in% c(101:130))
+write_csv(df_fix_n, here("data", "analyses", "df_fix_n.csv"))
 
 # Create fix_time_perc
 df_fix_time_perc <- df_AOIgroups %>%
@@ -121,3 +121,9 @@ df_fix_time_perc <- df_AOIgroups %>%
     mutate(TotalFixTime = sum(FixTime, na.rm = TRUE)) %>%
     ungroup() %>%
     mutate(FixTimePerc = (FixTime / TotalFixTime) * 100)
+
+df_fix_time_perc %>% filter(AOI != "whitespace_hair", FaceGender == "M", ID %in% c(101:130))
+# 5340 rows, roughly the df in the published analysis (5279)
+
+# save to csv
+write_csv(df_fix_time_perc, here("data", "analyses", "df_fix_time_perc.csv"))
