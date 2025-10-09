@@ -23,7 +23,18 @@ n_sessions <- df %>%
     group_by(ID) %>%
     summarise(n = n_distinct(Session))
 
-n_sessions %>% filter(n != 3)
+IDs <- n_sessions %>%
+    filter(n != 3) %>%
+    pull(ID)
+
+df %>%
+    filter(ID %in% IDs) %>%
+    select(ID, Session) %>%
+    unique() %>%
+    arrange(ID, Session)
+
+
+
 # 4 odd ones
 
 # check in initial drug data

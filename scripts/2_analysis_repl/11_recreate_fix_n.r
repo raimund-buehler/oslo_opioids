@@ -25,8 +25,6 @@ df_m <-
 #     filter(!FixCount > 20) %>%
 #     select(ID, Drug, StimOrder, Stimulus, AOI, FixCount)
 
-
-
 # create barpolot of FixCount per Drug
 df_f %>%
     group_by(Drug) %>%
@@ -70,8 +68,8 @@ anova(fix_n_m)
 
 library(lmerTest)
 
-fix_n_f <- lmer(FixTimePerc ~ Drug * Gaze2 * AttrLevel + StimOrder + Imagelist + Session + (1 | ID), data = df_f)
-fix_n_m <- lmer(FixTimePerc ~ Drug * Gaze2 * AttrLevel + StimOrder + Imagelist + Session + (1 | ID), data = df_m)
+fix_n_f <- lmer(FixTimePerc ~ Drug * Gaze2 * AttrLevel + StimOrder + Imagelist + Session + (1 + Drug | ID), data = df_f)
+fix_n_m <- lmer(FixTimePerc ~ Drug * Gaze2 * AttrLevel + StimOrder + Imagelist + Session + (1 + Drug | ID), data = df_m)
 
 anova(fix_n_f)
 anova(fix_n_m)

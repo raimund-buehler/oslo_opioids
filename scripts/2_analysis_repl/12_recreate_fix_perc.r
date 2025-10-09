@@ -66,7 +66,7 @@ means_sds_df <- function(df) {
 
 # females
 means_sds_df(df_f)
-# means pretty close, but higher sd values
+# means pretty close, sd's within subject! --> mean centered
 # published: female (Eye Region, M = 45.08 SD = 15.18; P = 41.89, SD = 16.42; N = 39.17, SD = 18.22)
 
 # males
@@ -94,8 +94,8 @@ anova(fix_perc_f)
 anova(fix_perc_m)
 
 # random slope for AOI and Drug: only significant for females
-fix_perc_f <- lmer(FixTimePerc ~ AOI * Drug * Gaze2 * AttrLevel + StimOrder + Imagelist + Session + (AOI + Drug | ID), data = df_f)
-fix_perc_m <- lmer(FixTimePerc ~ AOI * Drug * Gaze2 * AttrLevel + StimOrder + Imagelist + Session + (AOI + Drug | ID), data = df_m)
+fix_perc_f <- lmer(FixTimePerc ~ AOI * Drug * Gaze2 * AttrLevel + StimOrder + Imagelist + Session + (Drug | ID), data = df_f)
+fix_perc_m <- lmer(FixTimePerc ~ AOI * Drug * Gaze2 * AttrLevel + StimOrder + Imagelist + Session + (Drug | ID), data = df_m)
 
 anova(fix_perc_f)
 anova(fix_perc_m)
