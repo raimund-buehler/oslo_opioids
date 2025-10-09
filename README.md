@@ -1,21 +1,19 @@
-μ-Opioid Modulation of Social Attention
+**μ-Opioid Modulation of Social Attention**
 
 Replication and Extension Study (Leknes Lab, University of Oslo)
 
 This repository contains data and analysis scripts for the preregistered project:
 “μ-opioid modulation of visual attention to faces and its relation to autistic traits and OPRM1 genotype”
-(OSF preregistration)
+([OSF preregistration](https://osf.io/gv7mz))
 
 The goal is to reproduce and extend prior analyses (Chelnokova et al., 2016) by including additional participants and new predictors (ASQ, OPRM1 genotype).
 
-Folder Overview
-
-data/ contains all datasets used in preprocessing and analysis.
+`data/` contains all datasets used in preprocessing and analysis.
 **Primary analysis dataset: `data/analyses/fix_perc_ASQ_GEN.csv` → to be used for all statistical models in the preregistration.**
 
-scripts/ contains all scripts for preprocessing, merging so far
+`scripts/` contains all scripts for preprocessing, merging so far
 
-Codebook for fix_perc_ASQ_GEN.csv
+**Codebook for `fix_perc_ASQ_GEN.csv`**
 
 | Variable         | Type              | Description                                                  |
 | ---------------- | ----------------- | ------------------------------------------------------------ |
