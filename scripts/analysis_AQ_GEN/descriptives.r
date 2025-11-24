@@ -9,6 +9,9 @@ setwd("C:/Users/priva/Documents/GitHub/oslo_opioids/data/analyses")
 # Import data
 df <- read_csv("fix_perc_ASQ_GEN.csv")
 
+
+
+
 df <- readr::read_csv(
   "fix_perc_ASQ_GEN.csv",
   col_types = cols(
@@ -43,11 +46,11 @@ library(readr)
 
 df_subj <- df %>%
   group_by(ID) %>%
-  summarise(
+  reframe(
     Genetics = first(Genetics),
-    ASQ = first(ASQ),
-    
+    ASQ = first(ASQ)
   )
+
 
 
 # ================================================================
@@ -233,3 +236,179 @@ doc <- body_add_flextable(doc, ft)
 
 # Save as Word file
 print(doc, target = "APA_Descriptive_Table.docx")
+
+# ===================================================================
+# Sample Groups – corrected to use EXACT same df_subj as initial code
+# ===================================================================
+
+library(dplyr)
+library(tidyr)
+library(flextable)
+library(officer)
+
+# ----------------------------------------------------
+# 1. Use the existing df_subj (defined earlier)
+#    -> DO NOT recompute participant-level variables
+# ----------------------------------------------------
+
+df_subj_sample <- df_subj %>%
+  mutate(Sample = ifelse(ID < 200, "Original", "Additional"))
+
+# ----------------------------------------------------
+# 2. ASQ summaries per sample + total
+# ----------------------------------------------------
+
+asq_summ <- df_subj_sample %>%
+  group_by(Sample) %>%
+  reframe(
+    mean_ASQ = round(mean(ASQ, na.rm = TRUE), 2),
+    sd_ASQ   = round(sd(ASQ, na.rm = TRUE), 2)
+  ) %>%
+  bind_rows(
+    df_subj_sample %>%
+      reframe(
+        Sample   = "Total",
+        mean_ASQ = round(mean(ASQ, na.rm = TRUE), 2),
+        sd_ASQ   = round(sd(ASQ, na.rm = TRUE), 2)
+      )
+  )
+
+# ----------------------------------------------------
+# 3. Genotype counts per sample + total
+# ----------------------------------------------------
+
+geno_summ <- df_subj_sample %>%
+  group_by(Sample, Genetics) %>%
+  reframe(N = n()) %>%
+  bind_rows(
+    df_subj_sample %>%
+      group_by(Genetics) %>%
+      reframe(N = n()) %>%
+      mutate(Sample = "Total")
+  ) %>%
+  group_by(Sample) %>%
+  mutate(Percent = round(100 * N / sum(N), 2)) %>%
+  ungroup()
+
+geno_wide <- geno_summ %>%
+  pivot_wider(
+    id_cols = Sample,
+    names_from = Genetics,
+    values_from = c(N, Percent),
+    names_glue = "{Genetics}_{.value}"
+  )
+
+# ----------------------------------------------------
+# 4. Trial-level fixation summaries *do not use df_subj*
+#    -> They use df_trial, but Sample is derived the SAME way
+# ----------------------------------------------------
+
+df_trial <- df %>% mutate(Sample = ifelse(ID < 200, "Original", "Additional"))
+
+fix_summ <- df_trial %>%
+  group_by(Sample) %>%
+  reframe(
+    mean_fix   = round(mean(FixTimePerc,   na.rm = TRUE), 2),
+    sd_fix     = round(sd(FixTimePerc,     na.rm = TRUE), 2),
+    mean_total = round(mean(TotalFixTime,  na.rm = TRUE), 2),
+    sd_total   = round(sd(TotalFixTime,    na.rm = TRUE), 2)
+  ) %>%
+  bind_rows(
+    df_trial %>%
+      reframe(
+        Sample     = "Total",
+        mean_fix   = round(mean(FixTimePerc,   na.rm = TRUE), 2),
+        sd_fix     = round(sd(FixTimePerc,     na.rm = TRUE), 2),
+        mean_total = round(mean(TotalFixTime,  na.rm = TRUE), 2),
+        sd_total   = round(sd(TotalFixTime,    na.rm = TRUE), 2)
+      )
+  )
+
+# ----------------------------------------------------
+# 5. Helper for safe extraction
+# ----------------------------------------------------
+
+getv <- function(df, sample, var) {
+  df[[var]][match(sample, df$Sample)]
+}
+
+# ----------------------------------------------------
+# 6. Compact APA table
+# ----------------------------------------------------
+
+apa_sample_table <- tibble(
+  Variable = c(
+    "ASQ score",
+    "Genotype (A/A, A/G; N, %)",
+    "Fixation Time Percentage (%)",
+    "Total Fixation Time (ms)"
+  ),
+
+  Original = c(
+    paste0(getv(asq_summ, "Original", "mean_ASQ"), " (",
+           getv(asq_summ, "Original", "sd_ASQ"), ")"),
+
+    paste0(
+      "A/A: ", getv(geno_wide, "Original", "A_N"), " (",
+      getv(geno_wide, "Original", "A_Percent"), "%)\n",
+      "A/G: ", getv(geno_wide, "Original", "G_N"), " (",
+      getv(geno_wide, "Original", "G_Percent"), "%)"
+    ),
+
+    paste0(getv(fix_summ, "Original", "mean_fix"), " (",
+           getv(fix_summ, "Original", "sd_fix"), ")"),
+
+    paste0(getv(fix_summ, "Original", "mean_total"), " (",
+           getv(fix_summ, "Original", "sd_total"), ")")
+  ),
+
+  Additional = c(
+    paste0(getv(asq_summ, "Additional", "mean_ASQ"), " (",
+           getv(asq_summ, "Additional", "sd_ASQ"), ")"),
+
+    paste0(
+      "A/A: ", getv(geno_wide, "Additional", "A_N"), " (",
+      getv(geno_wide, "Additional", "A_Percent"), "%)\n",
+      "A/G: ", getv(geno_wide, "Additional", "G_N"), " (",
+      getv(geno_wide, "Additional", "G_Percent"), "%)"
+    ),
+
+    paste0(getv(fix_summ, "Additional", "mean_fix"), " (",
+           getv(fix_summ, "Additional", "sd_fix"), ")"),
+
+    paste0(getv(fix_summ, "Additional", "mean_total"), " (",
+           getv(fix_summ, "Additional", "sd_total"), ")")
+  ),
+
+  Total = c(
+    paste0(getv(asq_summ, "Total", "mean_ASQ"), " (",
+           getv(asq_summ, "Total", "sd_ASQ"), ")"),
+
+    paste0(
+      "A/A: ", getv(geno_wide, "Total", "A_N"), " (",
+      getv(geno_wide, "Total", "A_Percent"), "%)\n",
+      "A/G: ", getv(geno_wide, "Total", "G_N"), " (",
+      getv(geno_wide, "Total", "G_Percent"), "%)"
+    ),
+
+    paste0(getv(fix_summ, "Total", "mean_fix"), " (",
+           getv(fix_summ, "Total", "sd_fix"), ")"),
+
+    paste0(getv(fix_summ, "Total", "mean_total"), " (",
+           getv(fix_summ, "Total", "sd_total"), ")")
+  )
+)
+
+# ----------------------------------------------------
+# 7. Compact Word table
+# ----------------------------------------------------
+
+ft3 <- flextable(apa_sample_table) %>%
+  autofit() %>%
+  width(width = c(2, 2, 2, 2)) %>%
+  align(align = "left", part = "all")
+
+doc3 <- read_docx()
+doc3 <- body_add_par(doc3, "Table 2. Sample Comparisons (Compact APA Format)", style = "heading 2")
+doc3 <- body_add_flextable(doc3, ft3)
+print(doc3, target = "APA_Descriptives_Samples_Table.docx")
