@@ -2,14 +2,16 @@ library(dplyr)
 library(glmmTMB)
 library(emmeans)
 library(readr)
+library(here)
 
-df <- read_csv("fix_perc_ASQ_GEN.csv")
+df <- read_csv(here("data", "analyses", "fix_perc_ASQ_GEN.csv"))
 
 df_eye <- df %>%
   filter(ID >= 200, AOI == "eye_brow")
 
 df_eye$Drug <- factor(df_eye$Drug,
-                      levels = c("placebo","morphine","naltrexone"))
+  levels = c("placebo", "morphine", "naltrexone")
+)
 
 df_eye$FixProp <- df_eye$FixTimePerc / 100
 
@@ -23,7 +25,7 @@ filter(FixProp > .005, FixProp < .995)
 # ===============================
 
 model_beta_simple <- glmmTMB(
-  FixTimePerc ~ Drug + (1 | ID),
+  FixProp_beta ~ Drug + (1 | ID),
   family = beta_family(link = "logit"),
   data = df_eye
 )
@@ -31,7 +33,7 @@ model_beta_simple <- glmmTMB(
 summary(model_beta_simple)
 
 
-#Summary of workaround attempts within glmmTMB for beta regression using GPT-5.1
+# Summary of workaround attempts within glmmTMB for beta regression using GPT-5.1
 
 #| Attempt                        | Purpose                      | glmmTMB Support | Result           |
 #| ------------------------------ | ---------------------------- | --------------- | ---------------- |

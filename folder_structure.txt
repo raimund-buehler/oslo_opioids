@@ -1,0 +1,70 @@
+.
+├── cleaned_dataset.csv
+├── combined_data_temp.csv
+├── compare_stimuli.py
+├── data
+│   ├── 6_merged_Drug_StimOrder.csv
+│   ├── 7_merged_Imagelist.csv
+│   ├── 8_merged_session.csv
+│   ├── ASQ_genetics_lookup
+│   │   ├── cleaned_dataset.csv
+│   │   ├── combined_data_temp.csv
+│   │   ├── lookup_table.csv
+│   │   └── unified_dataset.csv
+│   ├── AllDrugs_8AOIs.xlsx
+│   ├── AllDrugs_AllAOIs.xlsx
+│   ├── DrugA.xls
+│   ├── DrugA.xlsx
+│   ├── DrugB.xlsx
+│   ├── DrugC.xlsx
+│   ├── Eye-tracking_data_N=30_w_ASQ.sav
+│   ├── Fix_Number.xls
+│   ├── Fix_Number.xlsx
+│   ├── Gaze_ASQ.xlsx
+│   ├── RandomiseringProtokoller_Guro_edit2024.xls
+│   ├── State&Trait-data.xlsx
+│   ├── Stim_ImList.csv
+│   ├── VL_1.xlsx
+│   ├── VisualLiking2 (hedda)_Guro_edit_2024 SESSION STIMLIST DRUG INFO.xlsx
+│   ├── VisualLiking_Guro_edit_march2024.xlsx
+│   ├── VisualLiking_complete.xlsx
+│   ├── analyses
+│   │   ├── df_fix_n.csv
+│   │   ├── df_fix_time_perc.csv
+│   │   └── fix_perc_ASQ_GEN.csv
+│   ├── cleaned_stims.csv
+│   ├── collapse_AOIs.csv
+│   ├── imagelist_dict.rds
+│   ├── merged_GazeDir_Gender_Attr.csv
+│   └── single_stims.csv
+├── filtered_not_480_row_counts.csv
+├── filtered_row_counts.csv
+├── folder_structure.txt
+├── mismatches_fix_vs_clean.xlsx
+├── mismatches_fix_vs_raw.xlsx
+├── mismatches_raw_vs_clean.xlsx
+├── scripts
+│   ├── 1_merging
+│   │   ├── 10_ASQ_genetics_lookup.py
+│   │   ├── 11_ASQ_genetics_file_lookup.py
+│   │   ├── 12_clean_unified_dataset.py
+│   │   ├── 13_merge_ASQ_GEN.py
+│   │   ├── 14_filter_not_480.py
+│   │   ├── 15_filterID246_missings.py
+│   │   ├── 1_merge_drug_abc.r
+│   │   ├── 2_merge_session_hedda_clean.r
+│   │   ├── 3_inconsistencies_merge_prep.r
+│   │   ├── 4_filter_inconsistencies.r
+│   │   ├── 5_merge_GazeDir_Gender_Attr.r
+│   │   ├── 6_recodeDrug_and_Stim_Order.r
+│   │   ├── 7_ImageList.r
+│   │   ├── 8_SessionInfo.r
+│   │   └── 9_consistency_check.r
+│   ├── 2_analysis_repl
+│   │   ├── 10_create_deps.r
+│   │   ├── 11_recreate_fix_n.r
+│   │   └── 12_recreate_fix_perc.r
+│   └── power_analysis.r
+└── unified_dataset.csv
+
+7 directories, 61 files
