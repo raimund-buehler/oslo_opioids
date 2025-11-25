@@ -6,6 +6,9 @@ library(here)
 
 df <- read_csv(here("data", "analyses", "fix_perc_ASQ_GEN.csv"))
 
+#Only additional sample and eye AOI
+#Wurde auch ohne ID/Sample-Filter probiert, ändert nichts
+
 df_eye <- df %>%
   filter(ID >= 200, AOI == "eye_brow")
 
@@ -15,10 +18,14 @@ df_eye$Drug <- factor(df_eye$Drug,
 
 df_eye$FixProp <- df_eye$FixTimePerc / 100
 
+#Clamp values to avoid 0 and 1 for beta regression (So:
+
+#0 becomes 0.000001, 1 becomes 0.999999, everything else stays almost the same
+
 eps <- 1e-6
 df_eye$FixProp_beta <- pmin(pmax(df_eye$FixProp, eps), 1 - eps)
 
-filter(FixProp > .005, FixProp < .995)
+
 
 # ===============================
 # Simple Beta-Model
@@ -45,3 +52,4 @@ summary(model_beta_simple)
 #| Probit link                    | alternative likelihood shape | yes             | fails            |
 #| BFGS optimizer                 | stabilize                    | yes             | fails            |
 #| Zero-one inflation + θ mapping | stabilize                    | yes             | fails            |
+
