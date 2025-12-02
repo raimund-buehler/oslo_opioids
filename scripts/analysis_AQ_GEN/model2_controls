@@ -1,0 +1,65 @@
+# ==========================================
+# Model 2: Drug * ASQ + Genetics + controls
+# ==========================================
+
+library(dplyr)
+library(glmmTMB)
+library(emmeans)
+library(readr)
+library(here)
+
+# Load data
+df <- read_csv(here("data", "analyses", "fix_perc_ASQ_GEN.csv"))
+
+# Filter for eye AOI only
+df_eye <- df %>% 
+  filter(AOI == "eye_brow")
+
+# Factor preparation
+df_eye$Drug       <- factor(df_eye$Drug, levels = c("placebo","morphine","naltrexone"))
+df_eye$Genetics   <- factor(df_eye$Genetics, levels = c("A","G"))
+df_eye$FaceGender <- factor(df_eye$FaceGender)
+df_eye$Gaze2      <- factor(df_eye$Gaze2)
+df_eye$AttrLevel  <- factor(df_eye$AttrLevel)
+df_eye$Imagelist  <- factor(df_eye$Imagelist)
+df_eye$Session    <- factor(df_eye$Session)
+
+# Proportion + clamp
+df_eye$FixProp <- df_eye$FixTimePerc / 100
+eps <- 1e-6
+df_eye$FixProp_beta <- pmin(pmax(df_eye$FixProp, eps), 1 - eps)
+
+# ==========================================
+# MODEL 2 (slopes model)
+# ==========================================
+
+model2 <- glmmTMB(
+  FixProp_beta ~ Drug * Genetics * ASQ +
+    FaceGender + Gaze2 + AttrLevel +
+    StimOrder + Imagelist + Session +
+    (1 | ID),
+  family = beta_family(link = "logit"),
+  data = df_eye
+)
+
+print(summary(model2))
+
+# Compute ASQ mean and SD
+ASQ_mean <- mean(df_eye$ASQ, na.rm = TRUE)
+ASQ_sd   <- sd(df_eye$ASQ, na.rm = TRUE)
+
+emm_drug_ASQ <- emmeans(
+  model2, 
+  ~ Drug | ASQ,
+  at = list(ASQ = c(ASQ_mean - ASQ_sd, ASQ_mean + ASQ_sd))
+)
+
+emm_drug_ASQ
+pairs(emm_drug_ASQ, adjust = "tukey")
+
+simple_slopes_ASQ <- emtrends(model2, ~ Drug, var = "ASQ")
+print(simple_slopes_ASQ)
+
+EH4_test <- emtrends(model2, ~ Genetics, var = "ASQ")
+EH4_test
+print(pairs(EH4_test))

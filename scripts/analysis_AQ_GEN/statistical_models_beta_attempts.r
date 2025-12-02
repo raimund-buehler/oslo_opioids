@@ -6,8 +6,15 @@ library(here)
 
 df <- read_csv(here("data", "analyses", "fix_perc_ASQ_GEN.csv"))
 
+#Working directory
+#setwd("C:/Users/priva/Documents/GitHub/oslo_opioids/data/analyses")
+
+#df <- read_csv("fix_perc_ASQ_GEN.csv")
+
+
 #Only additional sample and eye AOI
 #Wurde auch ohne ID/Sample-Filter probiert, ändert nichts
+
 
 df_eye <- df %>%
   filter(ID >= 200, AOI == "eye_brow")
@@ -32,12 +39,13 @@ df_eye$FixProp_beta <- pmin(pmax(df_eye$FixProp, eps), 1 - eps)
 # ===============================
 
 model_beta_simple <- glmmTMB(
-  FixProp_beta ~ Drug + (1 | ID),
+  FixProp_beta ~ ASQ + (1 | ID),
   family = beta_family(link = "logit"),
   data = df_eye
 )
 
-summary(model_beta_simple)
+print(summary(model_beta_simple))
+
 
 
 # Summary of workaround attempts within glmmTMB for beta regression using GPT-5.1
