@@ -1,0 +1,191 @@
+library(dplyr)
+library(glmmTMB)
+library(emmeans)
+library(readr)
+library(here)
+
+# Load data
+df <- read_csv(here("data", "analyses", "fix_perc_ASQ_GEN.csv"))
+
+# Filter for eye AOI only
+df_eye <- df %>% 
+  filter(AOI == "eye_brow")
+
+# Factor preparation
+df_eye$Drug       <- factor(df_eye$Drug, levels = c("placebo","morphine","naltrexone"))
+df_eye$Genetics   <- factor(df_eye$Genetics, levels = c("A","G"))
+df_eye$FaceGender <- factor(df_eye$FaceGender)
+df_eye$Gaze2      <- factor(df_eye$Gaze2)
+df_eye$AttrLevel  <- factor(df_eye$AttrLevel)
+df_eye$Imagelist  <- factor(df_eye$Imagelist)
+df_eye$Session    <- factor(df_eye$Session)
+
+# Proportion + clamp
+df_eye$FixProp <- df_eye$FixTimePerc / 100
+eps <- 1e-6
+df_eye$FixProp_beta <- pmin(pmax(df_eye$FixProp, eps), 1 - eps)
+
+
+# -------------------------------------------------------------
+# MODEL 1 (random intercept)
+# -------------------------------------------------------------
+model1 <- glmmTMB(
+  FixProp_beta ~ Drug + ASQ + Genetics +
+    FaceGender + Gaze2 + AttrLevel +
+    StimOrder + Imagelist + Session +
+    (1 | ID),
+  family = beta_family(link = "logit"),
+  data = df_eye
+)
+
+emmeans(model1, pairwise ~ Drug)
+emmeans(model1, specs = ~ ASQ)
+emmeans(model1, pairwise ~ Genetics)
+
+
+# -------------------------------------------------------------
+# MODEL 2 (random intercept)
+# -------------------------------------------------------------
+model2 <- glmmTMB(
+  FixProp_beta ~ Drug * ASQ + Genetics +
+    FaceGender + Gaze2 + AttrLevel +
+    StimOrder + Imagelist + Session +
+    (1 | ID),
+  family = beta_family(link = "logit"),
+  data = df_eye
+)
+
+ASQ_low  <- quantile(df_eye$ASQ, 0.25, na.rm = TRUE)
+ASQ_high <- quantile(df_eye$ASQ, 0.75, na.rm = TRUE)
+
+emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_low))
+emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_high))
+
+
+# -------------------------------------------------------------
+# MODEL 3 (random intercept)
+# -------------------------------------------------------------
+model3 <- glmmTMB(
+  FixProp_beta ~ Drug + ASQ * Genetics +
+    FaceGender + Gaze2 + AttrLevel +
+    StimOrder + Imagelist + Session +
+    (1 | ID),
+  family = beta_family(link = "logit"),
+  data = df_eye
+)
+
+emmeans(model3, specs = ~ ASQ | Genetics)
+
+
+# -------------------------------------------------------------
+# MODEL 4 (random intercept)
+# -------------------------------------------------------------
+model4 <- glmmTMB(
+  FixProp_beta ~ Drug * Genetics + ASQ +
+    FaceGender + Gaze2 + AttrLevel +
+    StimOrder + Imagelist + Session +
+    (1 | ID),
+  family = beta_family(link = "logit"),
+  data = df_eye
+)
+
+emmeans(model4, pairwise ~ Drug | Genetics)
+
+
+# -------------------------------------------------------------
+# MODEL 5 (random intercept)
+# -------------------------------------------------------------
+model5 <- glmmTMB(
+  FixProp_beta ~ Drug * Genetics * ASQ +
+    FaceGender + Gaze2 + AttrLevel +
+    StimOrder + Imagelist + Session +
+    (1 | ID),
+  family = beta_family(link = "logit"),
+  data = df_eye
+)
+
+emmeans(model5, specs = ~ ASQ | Drug * Genetics)
+
+
+# -------------------------------------------------------------
+# SAVE MODELS (intercepts only)
+# -------------------------------------------------------------
+
+models <- list(
+  model1 = model1,
+  model2 = model2,
+  model3 = model3,
+  model4 = model4,
+  model5 = model5
+)
+
+dir.create("models", showWarnings = FALSE)
+
+saveRDS(models, file = "models/all_glmm_models_intercept.rds")
+
+
+# -------------------------------------------------------------
+# SAVE POST-HOC RESULTS
+# -------------------------------------------------------------
+
+posthoc <- list(
+
+  Model1 = list(
+    header = c(
+      "Model 1",
+      "Post-hoc:",
+      "Drug pairwise comparisons",
+      "Simple slopes of ASQ",
+      "Genotype pairwise comparisons",
+      "H2: Higher ASQ → lower eye fixation",
+      "EH4.1: G allele → higher eye fixation"
+    ),
+    drug_contrasts = emmeans(model1, pairwise ~ Drug),
+    asq_effect      = emmeans(model1, specs = ~ ASQ),
+    genotype_contrasts = emmeans(model1, pairwise ~ Genetics)
+  ),
+
+  Model2 = list(
+    header = c(
+      "Model 2",
+      "Post-hoc:",
+      "Drug pairwise comparisons at low/high ASQ",
+      "H3: Drug × ASQ interaction"
+    ),
+    drug_low_asq  = emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_low)),
+    drug_high_asq = emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_high))
+  ),
+
+  Model3 = list(
+    header = c(
+      "Model 3",
+      "Post-hoc:",
+      "Simple slopes of ASQ per genotype",
+      "EH4.2: ASQ × Genotype interaction"
+    ),
+    simple_slopes_genotype = emmeans(model3, specs = ~ ASQ | Genetics)
+  ),
+
+  Model4 = list(
+    header = c(
+      "Model 4",
+      "Post-hoc:",
+      "Drug contrasts within genotype",
+      "EH5.1: Under morphine, G allele → ↑ eye fixation",
+      "EH5.2: Under naltrexone, G allele → ↓ eye fixation"
+    ),
+    drug_by_genotype = emmeans(model4, pairwise ~ Drug | Genetics)
+  ),
+
+  Model5 = list(
+    header = c(
+      "Model 5",
+      "Post-hoc:",
+      "Simple slopes of ASQ for each Drug × Genotype",
+      "EH5.3: Drug × Genotype × ASQ interaction"
+    ),
+    simple_slopes_3way = emmeans(model5, specs = ~ ASQ | Drug * Genetics)
+  )
+)
+
+saveRDS(posthoc, file = "models/posthoc_results_intercept.rds")
