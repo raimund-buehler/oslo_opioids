@@ -4,11 +4,44 @@ library(emmeans)
 library(readr)
 library(here)
 
+# OPTIONAL but useful for "relevant results"
+library(car)  # Anova()
+
+# -----------------------------
+# Helper: pretty console output
+# -----------------------------
+print_section <- function(title) {
+  cat("\n", paste(rep("=", 80), collapse=""), "\n", sep="")
+  cat(title, "\n")
+  cat(paste(rep("-", 80), collapse=""), "\n", sep="")
+}
+
+print_emm_pairwise <- function(x, emm_label = "EMMs", adjust = "tukey", type = "response") {
+  # x should be the object returned by emmeans(model, pairwise ~ ...)
+  # It is a list with $emmeans and $contrasts
+  if (is.list(x) && !is.null(x$emmeans) && !is.null(x$contrasts)) {
+    cat("\n", emm_label, " (estimated marginal means)\n", sep = "")
+    print(summary(x$emmeans, type = type))
+
+    cat("\nPost hoc pairwise contrasts (", adjust, ")\n", sep = "")
+    print(summary(x$contrasts, adjust = adjust, type = type))
+  } else {
+    # fallback
+    cat("\n", emm_label, "\n", sep = "")
+    print(summary(x, type = type))
+  }
+}
+
+print_emm <- function(x, emm_label = "EMMs", type = "response") {
+  cat("\n", emm_label, "\n", sep = "")
+  print(summary(x, type = type))
+}
+
 # Load data
 df <- read_csv(here("data", "analyses", "fix_perc_ASQ_GEN.csv"))
 
 # Filter for eye AOI only
-df_eye <- df %>% 
+df_eye <- df %>%
   filter(AOI == "eye_brow")
 
 # Factor preparation
@@ -25,45 +58,29 @@ df_eye$FixProp <- df_eye$FixTimePerc / 100
 eps <- 1e-6
 df_eye$FixProp_beta <- pmin(pmax(df_eye$FixProp, eps), 1 - eps)
 
+# additional participants only (IDs starting with "2") for Model 1
+df_eye_add <- df_eye %>%
+  filter(grepl("^2", as.character(ID)))
 
 # ------------------------------------------------------------------
-# MODEL 1
-# FixProp ~ Drug + ASQ + Genotype
-#
-# H2: Higher ASQ scores → lower fixation on eye region
-# EH4.1: G allele carriers → higher fixation % than AA
-#
-# Post-hoc:
-# - Drug pairwise comparisons
-# - Simple ASQ slope
-# - Genotype pairwise comparisons
+# MODEL 1 (random intercept + random slope for Drug)
 # ------------------------------------------------------------------
-
 model1 <- glmmTMB(
   FixProp_beta ~ Drug + ASQ + Genetics +
     FaceGender + Gaze2 + AttrLevel +
     StimOrder + Imagelist + Session +
     (1 + Drug | ID),
   family = beta_family(link = "logit"),
-  data = df_eye
+  data = df_eye_add
 )
 
-emmeans(model1, pairwise ~ Drug)
-emmeans(model1, specs = ~ ASQ)
-emmeans(model1, pairwise ~ Genetics)
-
+m1_drug_pw <- emmeans(model1, pairwise ~ Drug)
+m1_asq     <- emmeans(model1, specs = ~ ASQ)
+m1_gen_pw  <- emmeans(model1, pairwise ~ Genetics)
 
 # ------------------------------------------------------------------
-# MODEL 2
-# FixProp ~ Drug * ASQ + Genotype
-#
-# Two-Way Interaction
-# H3: Drug effects on fixation differ by ASQ levels.
-#
-# Post-hoc:
-# - Pairwise Drug comparisons at low/high ASQ
+# MODEL 2 (Drug * ASQ)
 # ------------------------------------------------------------------
-
 model2 <- glmmTMB(
   FixProp_beta ~ Drug * ASQ + Genetics +
     FaceGender + Gaze2 + AttrLevel +
@@ -76,22 +93,12 @@ model2 <- glmmTMB(
 ASQ_low  <- quantile(df_eye$ASQ, 0.25, na.rm = TRUE)
 ASQ_high <- quantile(df_eye$ASQ, 0.75, na.rm = TRUE)
 
-
-emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_low))
-emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_high))
-
+m2_drug_low  <- emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_low))
+m2_drug_high <- emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_high))
 
 # ------------------------------------------------------------------
-# MODEL 3
-# FixProp ~ Drug + ASQ * Genotype
-#
-# Two-Way Interaction
-# EH4.2: Relationship between ASQ and fixation depends on genotype.
-#
-# Post-hoc:
-# - Simple ASQ slopes for each genotype
+# MODEL 3 (ASQ * Genetics)
 # ------------------------------------------------------------------
-
 model3 <- glmmTMB(
   FixProp_beta ~ Drug + ASQ * Genetics +
     FaceGender + Gaze2 + AttrLevel +
@@ -101,21 +108,11 @@ model3 <- glmmTMB(
   data = df_eye
 )
 
-emmeans(model3, specs = ~ ASQ | Genetics)
-
+m3_slopes <- emmeans(model3, specs = ~ ASQ | Genetics)
 
 # ------------------------------------------------------------------
-# MODEL 4
-# FixProp ~ Drug * Genotype + ASQ
-#
-# Two-Way Interaction
-# EH5.1: Under morphine, G allele → increased eye fixation
-# EH5.2: Under naltrexone, G allele → decreased eye fixation
-#
-# Post-hoc:
-# - Drug contrasts within genotype
+# MODEL 4 (Drug * Genetics)
 # ------------------------------------------------------------------
-
 model4 <- glmmTMB(
   FixProp_beta ~ Drug * Genetics + ASQ +
     FaceGender + Gaze2 + AttrLevel +
@@ -125,20 +122,11 @@ model4 <- glmmTMB(
   data = df_eye
 )
 
-emmeans(model4, pairwise ~ Drug | Genetics)
-
+m4_drug_by_gen <- emmeans(model4, pairwise ~ Drug | Genetics)
 
 # ------------------------------------------------------------------
-# MODEL 5
-# FixProp ~ Drug * Genotype * ASQ
-#
-# Three-Way Interaction
-# EH5.3: μ-opioid manipulation × genotype × ASQ interact.
-#
-# Post-hoc:
-# - Simple ASQ slopes for each Drug × Genotype combination
+# MODEL 5 (Drug * Genetics * ASQ)
 # ------------------------------------------------------------------
-
 model5 <- glmmTMB(
   FixProp_beta ~ Drug * Genetics * ASQ +
     FaceGender + Gaze2 + AttrLevel +
@@ -148,13 +136,59 @@ model5 <- glmmTMB(
   data = df_eye
 )
 
-emmeans(model5, specs = ~ ASQ | Drug * Genetics)
+m5_slopes_3way <- emmeans(model5, specs = ~ ASQ | Drug * Genetics)
 
+# ------------------------------------------------------------------
+# PRINT ALL RELEVANT RESULTS TO CONSOLE (incl. post hoc)
+# ------------------------------------------------------------------
+# Notes:
+# - type="response" prints estimates on the proportion scale (inv-link)
+# - adjust="tukey" for pairwise; change to "holm"/"bonferroni"/"fdr" if preferred
+
+print_section("MODEL 1: FixProp_beta ~ Drug + ASQ + Genetics + ... + (1 + Drug | ID) [additional participants]")
+print(summary(model1))
+cat("\nType II Wald tests (fixed effects)\n")
+print(car::Anova(model1, type = 2))
+
+print_emm_pairwise(m1_drug_pw, emm_label = "Drug", adjust = "tukey", type = "response")
+print_emm(m1_asq, emm_label = "ASQ (estimated marginal mean / trend context)", type = "response")
+print_emm_pairwise(m1_gen_pw, emm_label = "Genetics", adjust = "tukey", type = "response")
+
+print_section("MODEL 2: FixProp_beta ~ Drug * ASQ + Genetics + ... + (1 + Drug | ID)")
+print(summary(model2))
+cat("\nType II Wald tests (fixed effects)\n")
+print(car::Anova(model2, type = 2))
+
+cat("\nASQ low (25th percentile): ", ASQ_low, "\n", sep = "")
+print_emm_pairwise(m2_drug_low, emm_label = "Drug at low ASQ", adjust = "tukey", type = "response")
+
+cat("\nASQ high (75th percentile): ", ASQ_high, "\n", sep = "")
+print_emm_pairwise(m2_drug_high, emm_label = "Drug at high ASQ", adjust = "tukey", type = "response")
+
+print_section("MODEL 3: FixProp_beta ~ Drug + ASQ * Genetics + ... + (1 + Drug | ID)")
+print(summary(model3))
+cat("\nType II Wald tests (fixed effects)\n")
+print(car::Anova(model3, type = 2))
+
+print_emm(m3_slopes, emm_label = "ASQ by Genetics (simple slopes context)", type = "response")
+
+print_section("MODEL 4: FixProp_beta ~ Drug * Genetics + ASQ + ... + (1 + Drug | ID)")
+print(summary(model4))
+cat("\nType II Wald tests (fixed effects)\n")
+print(car::Anova(model4, type = 2))
+
+print_emm_pairwise(m4_drug_by_gen, emm_label = "Drug within each Genetics", adjust = "tukey", type = "response")
+
+print_section("MODEL 5: FixProp_beta ~ Drug * Genetics * ASQ + ... + (1 + Drug | ID)")
+print(summary(model5))
+cat("\nType II Wald tests (fixed effects)\n")
+print(car::Anova(model5, type = 2))
+
+print_emm(m5_slopes_3way, emm_label = "ASQ by Drug x Genetics (3-way context)", type = "response")
 
 # ------------------------------------------------------------------
 # Save models
 # ------------------------------------------------------------------
-
 models <- list(
   model1 = model1,
   model2 = model2,
@@ -164,15 +198,12 @@ models <- list(
 )
 
 dir.create("models", showWarnings = FALSE)
-
 saveRDS(models, file = "models/all_glmm_models_slope.rds")
 
 # --------------------------------------------------------------
 # SAVE ALL POST-HOC RESULTS INTO AN RDS FILE
 # --------------------------------------------------------------
-
 posthoc <- list(
-
   Model1 = list(
     header = c(
       "Model 1",
@@ -183,9 +214,9 @@ posthoc <- list(
       "H2: Higher ASQ → lower eye fixation",
       "EH4.1: G allele → higher eye fixation"
     ),
-    drug_contrasts = emmeans(model1, pairwise ~ Drug),
-    asq_effect      = emmeans(model1, specs = ~ ASQ),
-    genotype_contrasts = emmeans(model1, pairwise ~ Genetics)
+    drug_contrasts = m1_drug_pw,
+    asq_effect = m1_asq,
+    genotype_contrasts = m1_gen_pw
   ),
 
   Model2 = list(
@@ -195,8 +226,8 @@ posthoc <- list(
       "Drug pairwise comparisons at low/high ASQ",
       "H3: Drug × ASQ interaction"
     ),
-    drug_low_asq  = emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_low)),
-    drug_high_asq = emmeans(model2, pairwise ~ Drug | ASQ, at = list(ASQ = ASQ_high))
+    drug_low_asq  = m2_drug_low,
+    drug_high_asq = m2_drug_high
   ),
 
   Model3 = list(
@@ -206,7 +237,7 @@ posthoc <- list(
       "Simple slopes of ASQ per genotype",
       "EH4.2: ASQ × Genotype interaction"
     ),
-    simple_slopes_genotype = emmeans(model3, specs = ~ ASQ | Genetics)
+    simple_slopes_genotype = m3_slopes
   ),
 
   Model4 = list(
@@ -217,7 +248,7 @@ posthoc <- list(
       "EH5.1: Under morphine, G allele → ↑ eye fixation",
       "EH5.2: Under naltrexone, G allele → ↓ eye fixation"
     ),
-    drug_by_genotype = emmeans(model4, pairwise ~ Drug | Genetics)
+    drug_by_genotype = m4_drug_by_gen
   ),
 
   Model5 = list(
@@ -227,9 +258,8 @@ posthoc <- list(
       "Simple slopes of ASQ for each Drug × Genotype",
       "EH5.3: Drug × Genotype × ASQ interaction"
     ),
-    simple_slopes_3way = emmeans(model5, specs = ~ ASQ | Drug * Genetics)
+    simple_slopes_3way = m5_slopes_3way
   )
-
 )
 
 saveRDS(posthoc, file = "models/posthoc_results_slope.rds")
