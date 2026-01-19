@@ -3,8 +3,8 @@ library(glmmTMB)
 # ----------------------------------------------------------
 # Load models
 # ----------------------------------------------------------
-models_intercepts <- readRDS("models/all_glmm_models_intercept.rds")
-models_slopes     <- readRDS("models/all_glmm_models_slope.rds")
+models_intercepts <- readRDS("models/fix_perc_ASQ_GEN/all_glmm_models_intercept.rds")
+models_slopes     <- readRDS("models/fix_perc_ASQ_GEN/all_glmm_models_slope.rds")
 
 # ----------------------------------------------------------
 # PART 1: LRT between intercept-only vs. slope models

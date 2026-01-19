@@ -280,3 +280,48 @@ p <- ggplot(emm_df, aes(x = Drug, y = y, group = Genetics, color = Genetics)) +
   theme_minimal()
 
 ggsave("Model4_Drug_by_Genotype_plot.png", plot = p, width = 7, height = 5, dpi = 300)
+
+# -----------------------
+# 9) Plot: interaction plot Drug × Genetics (response scale) -- ROBUST
+# -----------------------
+emm <- emmeans(m4_slope, ~ Drug * Genetics)
+emm_df <- as.data.frame(summary(emm, type = "response"))
+
+# response column can differ by emmeans/model family
+if ("response" %in% names(emm_df)) {
+  emm_df$y <- emm_df$response
+} else if ("prob" %in% names(emm_df)) {
+  emm_df$y <- emm_df$prob
+} else if ("rate" %in% names(emm_df)) {
+  emm_df$y <- emm_df$rate
+} else {
+  stop("Couldn't find a response-scale column in emmeans output (expected response/prob/rate).")
+}
+
+# CI column names can differ
+if (all(c("lower.CL", "upper.CL") %in% names(emm_df))) {
+  emm_df$ymin <- emm_df$lower.CL
+  emm_df$ymax <- emm_df$upper.CL
+} else if (all(c("asymp.LCL", "asymp.UCL") %in% names(emm_df))) {
+  emm_df$ymin <- emm_df$asymp.LCL
+  emm_df$ymax <- emm_df$asymp.UCL
+} else if (all(c("LCL", "UCL") %in% names(emm_df))) {
+  emm_df$ymin <- emm_df$LCL
+  emm_df$ymax <- emm_df$UCL
+} else {
+  stop("Couldn't find CI columns in emmeans output (lower.CL/upper.CL or asymp.LCL/asymp.UCL).")
+}
+
+p <- ggplot(emm_df, aes(x = Drug, y = y, group = Genetics, color = Genetics)) +
+  geom_point(position = position_dodge(width = 0.2)) +
+  geom_line(position = position_dodge(width = 0.2)) +
+  geom_errorbar(aes(ymin = ymin, ymax = ymax),
+                width = 0.1, position = position_dodge(width = 0.2)) +
+  labs(
+    x = "Drug condition",
+    y = "Predicted fixation proportion (eye region)",
+    title = "Model 4: Drug × Genotype interaction (predicted means, 95% CI)"
+  ) +
+  theme_minimal()
+
+ggsave("Model4_Drug_by_Genotype_slope_plot.png", plot = p, width = 7, height = 5, dpi = 300)
