@@ -9,6 +9,19 @@
 #          M    M > P 1.66 = 0.097
 #          M    P > N 2.40 = 0.016
 
+# Random slope:
+#    FixTimePerc ~ AOI * Drug * Gaze2 * AttrLevel +
+#      StimOrder + Imagelist + Session +
+#      (1 + Drug | ID),
+
+#          F    M > N 4.84 < 0.001
+#          F    M > P 2.83 = 0.006
+#          F    P > N 1.32 = 0.190
+
+#          M    M > N 3.79 < 0.001
+#          M    M > P 1.51 = 0.132
+#          M    P > N 1.95 = 0.054
+
 
 library(tidyverse)
 library(here)
@@ -19,9 +32,9 @@ library(emmeans)
 # SPSS-like Type III needs sum-to-zero contrasts
 options(contrasts = c("contr.sum", "contr.poly"))
 
-df <- read_csv(here("data","analyses","fix_perc_ASQ_GEN.csv"))
+df <- read_csv(here("data","analyses","df_fix_time_perc.csv"))
 
-id_prefix <- "^1"  # "^1" original, "^2" additional
+#id_prefix <- "^1"  # "^1" original, "^2" additional
 
 dat <- df %>%
   filter(grepl(id_prefix, as.character(ID))) %>%
@@ -58,7 +71,7 @@ run_facegender <- function(face) {
   m_ml <- lmer(
     FixTimePerc ~ AOI * Drug * Gaze2 * AttrLevel +
       StimOrder + Imagelist + Session +
-      (1 + Drug | ID),
+      (1 | ID),
     data = d,
     REML = FALSE
   )
