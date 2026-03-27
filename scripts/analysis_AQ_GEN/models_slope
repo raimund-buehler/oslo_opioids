@@ -71,7 +71,7 @@ model1 <- glmmTMB(
     StimOrder + Imagelist + Session +
     (1 + Drug | ID),
   family = beta_family(link = "logit"),
-  data = df_eye_add
+  data = df_eye_add # only on 19 additional participants
 )
 
 m1_drug_pw <- emmeans(model1, pairwise ~ Drug)
@@ -263,3 +263,4 @@ posthoc <- list(
 )
 
 saveRDS(posthoc, file = "models/posthoc_results_slope.rds")
+
